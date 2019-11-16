@@ -3,10 +3,10 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -30,34 +30,23 @@ func (iq InputQuest) askQuestion(question string, correctResult string) (bool, e
 	return true, nil
 }
 
+var stopTime int
+var questSource string
+
+func init() {
+	flag.IntVar(&stopTime, "time", 10, "duration time to answer quiz questions")
+	flag.IntVar(&stopTime, "t", 10, "duration time to answer quiz questions (shorthand)")
+	flag.StringVar(&questSource, "source", "problems.csv", "csv source for quiz questions in the form question, result")
+	flag.StringVar(&questSource, "s", "problems.csv", "csv source for quiz questions in the form question, result (shorthand)")
+}
+
 func main() {
 
-	var stopTime int = 10
-	var sourceQuest string = "problems.csv"
 	var err error
 
-	args := os.Args[1:]
+	flag.Parse()
 
-	var candidateArg string
-	for i := 0; i < len(args); i++ {
-		if candidateArg = args[i]; strings.Contains(candidateArg, "--help") {
-			fmt.Println("--time input in seconds for quiz duration")
-			fmt.Println("--source input for a csv source for quiz questions in the form question, result")
-			fmt.Println("example: quiz --time=20 --source=quests.csv")
-			return
-		}
-		if candidateArg = args[i]; strings.Contains(candidateArg, "--time=") {
-			stopTime, err = strconv.Atoi(strings.Split(candidateArg, "=")[1])
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-		}
-		if candidateArg = args[i]; strings.Contains(candidateArg, "--source=") {
-			sourceQuest = strings.Split(candidateArg, "=")[1]
-		}
-	}
-
-	questions, err := loadQuestions(sourceQuest)
+	questions, err := loadQuestions(questSource)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
