@@ -11,11 +11,16 @@ import (
 	"time"
 )
 
-type InputQuest struct {
+type questAnswer struct {
+	question string
+	answer   string
+}
+
+type inputQuest struct {
 	inputReader bufio.Reader
 }
 
-func (iq InputQuest) askQuestion(question string, correctResult string) (bool, error) {
+func (iq inputQuest) askQuestion(question string, correctResult string) (bool, error) {
 	fmt.Printf("Insert result for \"%v\": ", question)
 	inputed, err := iq.inputReader.ReadString('\n')
 	if err != nil {
@@ -33,25 +38,21 @@ func (iq InputQuest) askQuestion(question string, correctResult string) (bool, e
 var stopTime int
 var questSource string
 
-func init() {
+func main() {
+
 	flag.IntVar(&stopTime, "time", 10, "duration time to answer quiz questions")
 	flag.IntVar(&stopTime, "t", 10, "duration time to answer quiz questions (shorthand)")
 	flag.StringVar(&questSource, "source", "problems.csv", "csv source for quiz questions in the form question, result")
 	flag.StringVar(&questSource, "s", "problems.csv", "csv source for quiz questions in the form question, result (shorthand)")
-}
-
-func main() {
-
-	var err error
-
 	flag.Parse()
 
+	var err error
 	questions, err := loadQuestions(questSource)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	inputQuest := InputQuest{
+	inputQuest := inputQuest{
 		inputReader: *bufio.NewReader(os.Stdin),
 	}
 
@@ -59,10 +60,10 @@ func main() {
 	go timing(stopTime)
 
 	var correctCounter int = 0
-	var wrongQuestions [][]string = [][]string{}
+	var wrongQuestions []questAnswer = []questAnswer{}
 	for i := 0; i < len(questions); i++ {
-		var tempQuest []string = questions[i]
-		result, err := inputQuest.askQuestion(tempQuest[0], tempQuest[1])
+		var tempQuest questAnswer = questions[i]
+		result, err := inputQuest.askQuestion(tempQuest.question, tempQuest.answer)
 		if err != nil {
 			log.Fatal(fmt.Sprintf("error on manage input: %v \n", err.Error()))
 		}
@@ -79,32 +80,32 @@ func main() {
 	if len(wrongQuestions) > 0 {
 		fmt.Println("Wrong quests:")
 		for i := 0; i < len(wrongQuestions); i++ {
-			fmt.Printf("- %v. Correct response: %v\n", wrongQuestions[i][0], wrongQuestions[i][1])
+			fmt.Printf("- %v. Correct response: %v\n", wrongQuestions[i].question, wrongQuestions[i].answer)
 		}
 	}
 
 }
 
-func loadQuestions(source string) ([][]string, error) {
+func loadQuestions(source string) ([]questAnswer, error) {
 	questionsFile, err := os.Open(source)
 	if err != nil {
 		return nil, fmt.Errorf("Error on open resource file: %v", err.Error())
 	}
-
-	questionsData := make([]byte, 1024)
-	dataLength, err := questionsFile.Read(questionsData)
-	if err != nil {
-		return nil, fmt.Errorf("Error on reading resource file: %v", err.Error())
-	}
-
-	data := string(questionsData[:dataLength])
-
-	csvReader := csv.NewReader(strings.NewReader(data))
+	csvReader := csv.NewReader(questionsFile)
 	csvData, err := csvReader.ReadAll()
 	if err != nil {
 		return nil, fmt.Errorf("Error on reading resource file: %v", err.Error())
 	}
-	return csvData, nil
+
+	var results []questAnswer = make([]questAnswer, len(csvData))
+	for i, questItem := range csvData {
+		results[i] = questAnswer{
+			question: questItem[0],
+			answer:   questItem[1],
+		}
+	}
+
+	return results, nil
 }
 
 func timing(stopTime int) {
