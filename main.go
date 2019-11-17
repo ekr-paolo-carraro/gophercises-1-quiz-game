@@ -109,5 +109,7 @@ func loadQuestions(source string) ([][]string, error) {
 
 func timing(stopTime int) {
 	time.Sleep(time.Duration(time.Duration(stopTime) * time.Second))
+	fmt.Println("")
+	fmt.Println("Time is over!")
 	os.Exit(1)
 }
